@@ -426,3 +426,4 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+IndigoChallenge/App_Data/measurements.csv
