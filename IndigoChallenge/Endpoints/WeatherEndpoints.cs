@@ -67,6 +67,16 @@ public static class TemperatureEndpoints
             .WithName("FilterCitiesByAverageTemperature")
             .Produces<List<CityAvgDto>>(StatusCodes.Status200OK);
 
+        group.MapGet(
+                "/last-recalculated",
+                (CityTemperatureStatsService cache) =>
+                {
+                    return TypedResults.Ok(cache.LastRebuildUtc);
+                }
+            )
+            .WithName("GetLastRecalculatedTime")
+            .Produces<DateTimeOffset?>(StatusCodes.Status200OK);
+
         group.MapPost(
                 "/recalculate",
                 async (CityTemperatureStatsService cache) =>
