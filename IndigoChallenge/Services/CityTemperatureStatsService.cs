@@ -34,6 +34,13 @@ public sealed class CityTemperatureStatsService
         }
     }
 
+    public bool GetCache(string city, out CityStatsDto? stats)
+    {
+        lock (gate)
+        {
+            return this.stats.TryGetValue(city, out stats);
+        }
+    }
 
     public Task RebuildAsync()
     {

@@ -16,6 +16,19 @@ public static class TemperatureEndpoints
 
     private static void MapTemperatureGroup(RouteGroupBuilder group)
     {
+        static IResult GetCityStats(
+            string city,
+            CityTemperatureStatsService cache
+        )
+        {
+            if (cache.GetCache(city, out var stats) && stats is not null)
+            {
+                return TypedResults.Ok(stats);
+            }
+
+            return TypedResults.NotFound();
+        }
+
         group.MapGet(
                 "/",
                 (CityTemperatureStatsService cache) =>
@@ -27,6 +40,43 @@ public static class TemperatureEndpoints
             .WithName("GetAllCityTemperatureStats")
             .Produces<List<CityStatsDto>>(StatusCodes.Status200OK);
 
+        group.MapGet(
+                "/{city}",
+                GetCityStats
+            )
+            .WithName("GetCityTemperatureStats")
+            .Produces<CityStatsDto>(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status404NotFound);
+
+        group.MapGet(
+                "/filter",
+            (double? gt, double? lt, CityTemperatureStatsService cache) =>
+                {
+                    var filtered = cache
+                        .GetAll()
+                        .Values
+                        .Where(x => !gt.HasValue || x.Average > gt.Value)
+                        .Where(x => !lt.HasValue || x.Average < lt.Value)
+                        .Select(x => new CityAvgDto(x.City, x.Average))
+                        .OrderBy(x => x.City)
+                        .ToList();
+
+                    return TypedResults.Ok(filtered);
+                }
+            )
+            .WithName("FilterCitiesByAverageTemperature")
+            .Produces<List<CityAvgDto>>(StatusCodes.Status200OK);
+
+        group.MapPost(
+                "/recalculate",
+                async (CityTemperatureStatsService cache) =>
+                {
+                    await cache.RebuildAsync();
+                    return Results.Accepted();
+                }
+            )
+            .WithName("RecalculateTemperatureStats")
+            .Produces(StatusCodes.Status202Accepted);
     }
 }
 
